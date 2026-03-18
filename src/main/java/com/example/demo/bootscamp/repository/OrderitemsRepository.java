@@ -15,13 +15,15 @@ public interface OrderItemsRepository extends JpaRepository<OrderItemsEntity, In
     boolean existsByProductId(Integer productId);
 
     // BR-06 — เช็คเฉพาะ order ที่ยังไม่เสร็จ (status = pending หรือ shipped)
-    // ลบได้เฉพาะเมื่อไม่มี order ที่ค้างอยู่เท่านั้น
-    @Query("""
-        SELECT COUNT(oi) > 0
-        FROM OrderItemsEntity oi
-        JOIN OrdersEntity o ON o.id = oi.orderId
-        WHERE oi.productId = :productId
-        AND o.status NOT IN ('completed')
-    """)
+    // ใช้ EXISTS แทน COUNT(*) > 0 เพื่อความเข้ากันได้ทุก DB
+    @Query(value = """
+        SELECT EXISTS (
+            SELECT 1
+            FROM order_items oi
+            INNER JOIN orders o ON o.id = oi.order_id
+            WHERE oi.product_id = :productId
+            AND o.status IN ('pending', 'shipped')
+        )
+    """, nativeQuery = true)
     boolean existsByProductIdAndOrderNotCompleted(@Param("productId") Integer productId);
 }

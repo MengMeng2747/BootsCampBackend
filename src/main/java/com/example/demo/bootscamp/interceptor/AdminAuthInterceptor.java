@@ -14,6 +14,12 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
                              HttpServletResponse response,
                              Object handler) throws Exception {
 
+        // ✅ ยกเว้น OPTIONS request (CORS preflight) ต้องผ่านทุกครั้ง
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            return true;
+        }
+
         // ยกเว้น /admin/login ไม่ต้องเช็ค session
         String uri = request.getRequestURI();
         if (uri.equals("/admin/login")) {
