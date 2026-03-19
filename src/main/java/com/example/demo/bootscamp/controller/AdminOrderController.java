@@ -1,6 +1,6 @@
 package com.example.demo.bootscamp.controller;
 
-import com.example.demo.bootscamp.entity.OrdersEntity;
+import com.example.demo.bootscamp.dto.Res.OrderRes;
 import com.example.demo.bootscamp.service.AdminOrderService;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,20 +16,21 @@ public class AdminOrderController {
         this.adminOrderService = adminOrderService;
     }
 
+    // GET ALL — ส่ง OrderRes ที่มี shopName จริงจาก DB
     @GetMapping
-    public List<OrdersEntity> getOrders() {
+    public List<OrderRes> getOrders() {
         return adminOrderService.getAllOrders();
     }
 
     // pending → shipped (BR-10)
     @PutMapping("/{id}/ship")
-    public OrdersEntity shipOrder(@PathVariable Long id) {
+    public OrderRes shipOrder(@PathVariable Long id) {
         return adminOrderService.shipOrder(id);
     }
 
     // shipped → completed
     @PutMapping("/{id}/complete")
-    public OrdersEntity completeOrder(@PathVariable Long id) {
+    public OrderRes completeOrder(@PathVariable Long id) {
         return adminOrderService.completeOrder(id);
     }
 }

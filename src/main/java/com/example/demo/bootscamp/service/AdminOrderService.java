@@ -1,5 +1,6 @@
 package com.example.demo.bootscamp.service;
 
+import com.example.demo.bootscamp.dto.Res.OrderRes;
 import com.example.demo.bootscamp.entity.*;
 import com.example.demo.bootscamp.repository.*;
 import org.springframework.stereotype.Service;
@@ -8,41 +9,65 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminOrderService {
 
-    private final OrdersRepository orderRepository;
+    private final OrdersRepository     orderRepository;
     private final OrderItemsRepository orderItemRepository;
-    private final WalletRepository walletRepository;
-    private final WalletLogRepository walletLogRepository;
-    private final ShopRepository shopRepository;
+    private final WalletRepository     walletRepository;
+    private final WalletLogRepository  walletLogRepository;
+    private final ShopRepository       shopRepository;
 
     public AdminOrderService(OrdersRepository orderRepository,
                              OrderItemsRepository orderItemRepository,
                              WalletRepository walletRepository,
                              WalletLogRepository walletLogRepository,
                              ShopRepository shopRepository) {
-        this.orderRepository = orderRepository;
+        this.orderRepository     = orderRepository;
         this.orderItemRepository = orderItemRepository;
-        this.walletRepository = walletRepository;
+        this.walletRepository    = walletRepository;
         this.walletLogRepository = walletLogRepository;
-        this.shopRepository = shopRepository;
+        this.shopRepository      = shopRepository;
+    }
+
+    // ── helper: OrdersEntity → OrderRes (join shopName) ──────────────────────
+    private OrderRes toRes(OrdersEntity o) {
+        String shopName = shopRepository.findById(o.getShopId())
+                .map(ShopEntity::getShopName)
+                .orElse("Shop #" + o.getShopId());
+
+        return new OrderRes(
+                o.getId(),
+                o.getOrderNumber(),
+                o.getShopId(),
+                shopName,
+                o.getCustomerName(),
+                o.getCustomerPhone(),
+                o.getShippingAddress(),
+                o.getTotalAmount(),
+                o.getResellerProfit(),
+                o.getStatus(),
+                o.getCreatedAt()
+        );
     }
 
     // =========================
-    // GET ALL ORDERS
+    // GET ALL ORDERS — ส่ง OrderRes พร้อม shopName
     // =========================
-    public List<OrdersEntity> getAllOrders() {
-        return orderRepository.findAll();
+    public List<OrderRes> getAllOrders() {
+        return orderRepository.findAll()
+                .stream()
+                .map(this::toRes)
+                .collect(Collectors.toList());
     }
 
     // =========================
-    // SHIP ORDER (pending → shipped)
-    // BR-10: บวกกำไรเข้า Wallet ตัวแทน
+    // SHIP ORDER (pending → shipped) — BR-10
     // =========================
     @Transactional
-    public OrdersEntity shipOrder(Long orderId) {
+    public OrderRes shipOrder(Long orderId) {
 
         OrdersEntity order = orderRepository.findById(orderId.intValue())
                 .orElseThrow(() -> new RuntimeException("ไม่พบ order"));
@@ -52,10 +77,7 @@ public class AdminOrderService {
         }
 
         List<OrderItemsEntity> items = orderItemRepository.findByOrderId(order.getId());
-
-        if (items.isEmpty()) {
-            throw new RuntimeException("order ไม่มีสินค้า");
-        }
+        if (items.isEmpty()) throw new RuntimeException("order ไม่มีสินค้า");
 
         // คำนวณกำไร reseller (BR-11)
         BigDecimal totalProfit = BigDecimal.ZERO;
@@ -66,17 +88,14 @@ public class AdminOrderService {
             totalProfit = totalProfit.add(profit);
         }
 
-        // หา shop → reseller user
         ShopEntity shop = shopRepository.findById(order.getShopId())
                 .orElseThrow(() -> new RuntimeException("ไม่พบ shop"));
-
         Integer userId = shop.getUserId();
 
-        // หา wallet reseller
         WalletEntity wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("ไม่พบ wallet"));
 
-        // เพิ่มเงินใน wallet (BR-10)
+        // บวกกำไรเข้า wallet (BR-10)
         wallet.setBalance(wallet.getBalance().add(totalProfit));
         walletRepository.save(wallet);
 
@@ -90,16 +109,15 @@ public class AdminOrderService {
         log.setCreatedAt(LocalDateTime.now());
         walletLogRepository.save(log);
 
-        // เปลี่ยน status → shipped
         order.setStatus("shipped");
-        return orderRepository.save(order);
+        return toRes(orderRepository.save(order));
     }
 
     // =========================
     // COMPLETE ORDER (shipped → completed)
     // =========================
     @Transactional
-    public OrdersEntity completeOrder(Long orderId) {
+    public OrderRes completeOrder(Long orderId) {
 
         OrdersEntity order = orderRepository.findById(orderId.intValue())
                 .orElseThrow(() -> new RuntimeException("ไม่พบ order"));
@@ -109,6 +127,6 @@ public class AdminOrderService {
         }
 
         order.setStatus("completed");
-        return orderRepository.save(order);
+        return toRes(orderRepository.save(order));
     }
 }

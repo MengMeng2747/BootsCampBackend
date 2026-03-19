@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 public class RegisterService {
@@ -59,6 +60,7 @@ public class RegisterService {
         user.setRole("reseller");
         user.setStatus("pending");
         user.setAddress(req.getAddress());
+        user.setCreatedAt(LocalDateTime.now()); // ← set วันที่สมัคร
 
         userRepository.save(user);
 

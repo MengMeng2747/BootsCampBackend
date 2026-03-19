@@ -16,15 +16,16 @@ import java.util.Optional;
 @Service
 public class ResellerCatalogService {
 
-    private final ProductRepository productRepository;
-    private final ResellerProductRepository resellerProductRepository;
+    private final ProductRepository          productRepository;
+    private final ResellerProductRepository  resellerProductRepository;
 
     public ResellerCatalogService(ProductRepository productRepository,
                                   ResellerProductRepository resellerProductRepository) {
-        this.productRepository = productRepository;
+        this.productRepository         = productRepository;
         this.resellerProductRepository = resellerProductRepository;
     }
 
+    // ── เพิ่ม / แก้ราคาสินค้าในร้าน ─────────────────────────────────────────
     public String addProduct(AddProductToShopReq req) {
 
         ProductEntity product = productRepository
@@ -49,32 +50,38 @@ public class ResellerCatalogService {
 
         // BR-21 update price
         if (existing.isPresent()) {
-
             ResellerProductEntity rp = existing.get();
             rp.setSellingPrice(req.selling_price);
-
             resellerProductRepository.save(rp);
-
             return "แก้ไขราคาสำเร็จ";
         }
 
         // add new product
         ResellerProductEntity rp = new ResellerProductEntity();
-
         rp.setResellerId(req.reseller_id);
         rp.setProductId(Math.toIntExact(req.product_id));
         rp.setSellingPrice(req.selling_price);
         rp.setCreatedAt(LocalDateTime.now());
-
         resellerProductRepository.save(rp);
-
         return "เพิ่มสินค้าเข้าร้านสำเร็จ";
     }
 
+    // ── ลบสินค้าออกจากร้าน ───────────────────────────────────────────────────
+    public String removeProduct(Long resellerId, Long productId) {
+        ResellerProductEntity rp = resellerProductRepository
+                .findByResellerIdAndProductId(resellerId, productId)
+                .orElseThrow(() -> new RuntimeException("ไม่พบสินค้านี้ในร้าน"));
+
+        resellerProductRepository.delete(rp);
+        return "ลบสินค้าออกจากร้านสำเร็จ";
+    }
+
+    // ── ดึง catalog ทั้งหมด ──────────────────────────────────────────────────
     public List<CatalogProductRes> getCatalog() {
         return productRepository.getCatalogProducts();
     }
 
+    // ── ดึงสินค้าในร้านของ reseller ─────────────────────────────────────────
     public List<ResellerProductRes> getResellerProducts(Integer resellerId) {
         return productRepository.getResellerProducts(Long.valueOf(resellerId));
     }

@@ -109,12 +109,13 @@ public class OrderService {
     }
 
     // =========================
-    // BR-28 + BR-29: จ่ายเงิน → ตัดสต็อก
+    // BR-28 + BR-29: จ่ายเงิน → ตัดสต็อก (รับ orderNumber)
     // =========================
     @Transactional
-    public String payOrder(Integer orderId) {
+    public String payOrder(String orderNumber) {
 
-        OrdersEntity order = ordersRepository.findById(orderId)
+        // หา order จาก orderNumber
+        OrdersEntity order = ordersRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new RuntimeException("ไม่พบออเดอร์"));
 
         // ต้องเป็น pending เท่านั้น
@@ -122,7 +123,7 @@ public class OrderService {
             throw new RuntimeException("ออเดอร์นี้ชำระเงินแล้ว");
         }
 
-        List<OrderItemsEntity> items = orderItemsRepository.findByOrderId(orderId);
+        List<OrderItemsEntity> items = orderItemsRepository.findByOrderId(order.getId());
 
         // BR-29: ตัดสต็อกทุก item
         for (OrderItemsEntity item : items) {
@@ -139,8 +140,8 @@ public class OrderService {
             productRepository.save(product);
         }
 
-        // BR-28: status = pending (ระบบจำลอง อนุมัติทันที)
-        order.setStatus("pending");
+        // BR-28: status คงเป็น pending รอ Admin จัดส่ง (stock ถูกตัดแล้ว)
+        // ไม่เปลี่ยน status เพราะ pending = รอดำเนินการ, Admin จะเปลี่ยนเป็น shipped เอง
         ordersRepository.save(order);
 
         return order.getOrderNumber();

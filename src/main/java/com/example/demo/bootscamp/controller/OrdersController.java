@@ -24,10 +24,10 @@ public class OrdersController {
         return orderService.createOrder(req);
     }
 
-    // BR-28 + BR-29: จ่ายเงิน (จำลอง) → ตัดสต็อก
-    @PutMapping("/{orderId}/pay")
-    public String payOrder(@PathVariable Integer orderId) {
-        return orderService.payOrder(orderId);
+    // BR-28 + BR-29: จ่ายเงิน (จำลอง) → ตัดสต็อก รับ orderNumber
+    @PutMapping("/{orderNumber}/pay")
+    public String payOrder(@PathVariable String orderNumber) {
+        return orderService.payOrder(orderNumber);
     }
 
     // BR-30 + BR-31: ติดตาม order ด้วยเลข order

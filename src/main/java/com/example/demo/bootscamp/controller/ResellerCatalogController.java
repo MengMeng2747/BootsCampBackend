@@ -30,9 +30,16 @@ public class ResellerCatalogController {
         return resellerCatalogService.getResellerProducts(resellerId);
     }
 
-    // เพิ่มสินค้าเข้าร้าน
+    // เพิ่ม / แก้ราคาสินค้าในร้าน
     @PostMapping("/add")
     public String addProduct(@RequestBody AddProductToShopReq req) {
         return resellerCatalogService.addProduct(req);
+    }
+
+    // ลบสินค้าออกจากร้าน
+    @DeleteMapping("/remove")
+    public String removeProduct(@RequestParam Long resellerId,
+                                @RequestParam Long productId) {
+        return resellerCatalogService.removeProduct(resellerId, productId);
     }
 }
