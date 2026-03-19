@@ -11,10 +11,12 @@ import java.util.List;
 
 public interface ProductRepository extends JpaRepository<ProductEntity, Integer> {
 
+    // ✅ เพิ่ม p.imageUrl ใน query
     @Query("""
 SELECT new com.example.demo.bootscamp.dto.Res.CatalogProductRes(
     p.id,
     p.name,
+    p.imageUrl,
     p.costPrice,
     p.minPrice,
     p.stock

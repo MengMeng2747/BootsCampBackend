@@ -57,19 +57,22 @@ public class ProductService {
     // =============================
     // DELETE PRODUCT
     // =============================
+    @org.springframework.transaction.annotation.Transactional
     public void deleteProduct(Integer id) {
 
         ProductEntity product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ไม่พบสินค้า"));
 
         // BR-06: เช็คเฉพาะ order ที่ยังไม่เสร็จ (pending / shipped)
-        // ถ้ามี order ค้างอยู่ → ลบไม่ได้
-        boolean hasActiveOrder = orderItemRepository
-                .existsByProductIdAndOrderNotCompleted(product.getId());
+        int activeOrders = orderItemRepository
+                .countActiveOrdersByProductId(product.getId());
 
-        if (hasActiveOrder) {
+        if (activeOrders > 0) {
             throw new RuntimeException("ไม่สามารถลบสินค้าได้ เนื่องจากมีออเดอร์ที่ยังไม่เสร็จสมบูรณ์");
         }
+
+        // ลบ order_items ที่อ้างถึง product นี้ก่อน (completed orders เท่านั้น)
+        orderItemRepository.deleteByProductId(product.getId());
 
         // BR-05: ไม่มีออเดอร์ค้าง → ลบได้
         productRepository.delete(product);

@@ -21,8 +21,15 @@ public class AdminOrderController {
         return adminOrderService.getAllOrders();
     }
 
+    // pending → shipped (BR-10)
     @PutMapping("/{id}/ship")
     public OrdersEntity shipOrder(@PathVariable Long id) {
         return adminOrderService.shipOrder(id);
+    }
+
+    // shipped → completed
+    @PutMapping("/{id}/complete")
+    public OrdersEntity completeOrder(@PathVariable Long id) {
+        return adminOrderService.completeOrder(id);
     }
 }
